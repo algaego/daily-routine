@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Labor Cabinet v6</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=ZCOOL+QingKe+HuangYou&display=swap');
+
+:root {
+  --desktop-1: #cfe2f5; --desktop-2: #a9cdee;
+  --window: #f5f2e8; --window-2: #ebe6d6;
+  --titlebar-1: #4a90d9; --titlebar-2: #2d6cb5; --titlebar-text: #ffffff;
+  --ink: #1d1d28; --muted: #65614f; --dark-muted: #938d76; --line: #b0aa96;
+  --accent: #a86f1f; --tag-bg: #f0e8d0; --tag-border: #c9b98a;
+  --blue: #1a4f9c; --link: #1a4f9c;
+  --fragment: #757575; --draft: #b8791f; --forged: #2e7d32;
+  --campfire: #cf7b1e; --calm: #3f7d92; --soft-del: #b5524a;
+  --bevel-hi: #ffffff; --bevel-hi2: #e8e4d4; --bevel-lo: #45413a; --bevel-lo2: #938d76;
+  --btn-face: #ece9d8; --btn-text: #1d1d28;
+  --nav-active-bg: linear-gradient(180deg,#4a90d9,#2d6cb5); --nav-active-text: #ffffff;
+  --scroll-track: #d4cdb8; --scroll-thumb: #a89e80;
+  --shadow: 3px 3px 0 rgba(40,30,15,0.20);
+  --campfire-grad: linear-gradient(180deg, #fdeede, var(--window) 50%);
+
+  --font-title: 'Press Start 2P', monospace;
+  --font-ui: 'VT323', monospace;
+  --font-cn-active: 'Songti SC', 'Noto Serif SC', 'SimSun', serif;
+  --cn-size-active: 18px;
+  --en-scale: 1;
+}
+
+body.dark {
+  --desktop-1: #0c0814; --desktop-2: #140f20;
+  --window: #1e1730; --window-2: #2a2042;
+  --titlebar-1: #463a6e; --titlebar-2: #2a2042; --titlebar-text: #e8c840;
+  --ink: #ddd4c4; --muted: #8f88a0; --dark-muted: #5a5470; --line: #3d3260;
+  --accent: #e8c840; --tag-bg: #2a2248; --tag-border: #3d3568;
+  --blue: #7bb8f0; --link: #7bb8f0;
+  --fragment: #6e6888; --draft: #daa520; --forged: #4ecb71;
+  --campfire: #ff9b54; --calm: #8fb6c8; --soft-del: #d98a7e;
+  --bevel-hi: #5a4f85; --bevel-hi2: #3d3260; --bevel-lo: #0c0814; --bevel-lo2: #1a1228;
+  --btn-face: #2a2042; --btn-text: #e8c840;
+  --nav-active-bg: rgba(232,200,64,0.10); --nav-active-text: #e8c840;
+  --scroll-track: #0c0814; --scroll-thumb: #3d3260;
+  --shadow: 3px 3px 0 #0c0814;
+  --campfire-grad: linear-gradient(180deg, rgba(255,155,84,0.10), var(--window) 50%);
+}
+body[data-cn-font="pixel"] { --font-cn-active: 'ZCOOL QingKe HuangYou', 'Ark Pixel 12px Proportional', 'Ark Pixel 12px Monospaced', 'Zpix', 'SimSun', sans-serif; }
+body[data-cn-font="songti"] { --font-cn-active: 'Songti SC', 'Noto Serif SC', 'SimSun', serif; }
+body[data-cn-size="s"] { --cn-size-active: 16px; }
+body[data-cn-size="m"] { --cn-size-active: 18px; }
+body[data-cn-size="l"] { --cn-size-active: 20px; }
+body[data-en-font="terminal"] { --font-title: 'Lucida Console', 'Courier New', monospace; --font-ui: 'Lucida Console', 'Courier New', monospace; }
+body[data-en-font="pixel"] { --font-title: 'Press Start 2P', monospace; --font-ui: 'VT323', monospace; }
+body[data-en-size="s"] { --en-scale: 0.92; }
+body[data-en-size="m"] { --en-scale: 1; }
+body[data-en-size="l"] { --en-scale: 1.10; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  height: 100vh; overflow: hidden; color: var(--ink); font-family: var(--font-ui);
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 4px),
+              linear-gradient(180deg, var(--desktop-1), var(--desktop-2));
+}
+::-webkit-scrollbar { width: 16px; }
+::-webkit-scrollbar-track { background: var(--scroll-track); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo); }
+
+.hidden { display: none !important; }
+.app { display: flex; height: 100vh; padding: 8px; gap: 8px; }
+.sidebar { width: 214px; min-width: 214px; background: var(--window); border: 2px solid var(--line); box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.brand { background: linear-gradient(180deg, var(--titlebar-1), var(--titlebar-2)); color: var(--titlebar-text); font-family: var(--font-title); font-size: calc(11px * var(--en-scale)); padding: 11px 14px; letter-spacing: 1px; line-height: 1.45; }
+.nav-wrap { padding: 8px; flex: 1; }
+.nav-btn { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 12px; margin-bottom: 2px; text-align: left; font-family: var(--font-ui); font-size: calc(19px * var(--en-scale)); color: var(--ink); background: transparent; border: none; cursor: pointer; }
+.nav-btn:hover { background: rgba(120,110,90,0.12); }
+.nav-btn.active { background: var(--nav-active-bg); color: var(--nav-active-text); }
+.nav-btn .ic { font-size: calc(15px * var(--en-scale)); width: 22px; text-align: center; }
+.sidebar-foot { padding: 10px 14px; border-top: 1px solid var(--line); min-height: 54px; }
+.user-status { font-family: var(--font-title); font-size: calc(7px * var(--en-scale)); color: var(--dark-muted); line-height: 1.65; letter-spacing: 0.5px; word-break: break-all; }
+
+.main { flex: 1; overflow-y: auto; padding-right: 4px; }
+.section { display: none; } .section.active { display: block; }
+.page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.page-title { font-family: var(--font-title); font-size: calc(13px * var(--en-scale)); color: var(--accent); letter-spacing: 1px; line-height: 1.5; }
+.page-title.blue { color: var(--blue); } .page-title.fire { color: var(--campfire); }
+.page-sub { font-family: var(--font-ui); font-size: calc(20px * var(--en-scale)); color: var(--muted); margin-bottom: 18px; line-height: 1.25; }
+.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.toolbar .spacer { flex: 1; }
+
+.back-btn, .btn, .act, .mini-btn { font-family: var(--font-title); cursor: pointer; background: var(--btn-face); color: var(--btn-text); border: none; box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo), inset 2px 2px 0 var(--bevel-hi2), inset -2px -2px 0 var(--bevel-lo2); }
+.back-btn, .btn { font-size: calc(8px * var(--en-scale)); letter-spacing: 1px; padding: 9px 13px; line-height: 1.45; min-height: 31px; }
+.back-btn:active, .btn:active, .act:active, .mini-btn:active { box-shadow: inset -1px -1px 0 var(--bevel-hi), inset 1px 1px 0 var(--bevel-lo), inset -2px -2px 0 var(--bevel-hi2), inset 2px 2px 0 var(--bevel-lo2); }
+.btn.ghost { color: var(--muted); }
+.btn.del, .act.del:hover { color: var(--soft-del); }
+.act { font-size: calc(7px * var(--en-scale)); letter-spacing: 0.5px; padding: 5px 8px; color: var(--muted); box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo); }
+.act:hover { color: var(--ink); }
+
+.pwin { background: var(--window); border: 2px solid var(--line); box-shadow: var(--shadow); margin-bottom: 14px; }
+.pwin-bar { background: linear-gradient(180deg, var(--titlebar-1), var(--titlebar-2)); color: var(--titlebar-text); padding: 5px 6px 5px 11px; display: flex; align-items: center; gap: 8px; font-family: var(--font-title); font-size: calc(9px * var(--en-scale)); letter-spacing: 1px; line-height: 1.45; }
+.pwin-bar .jump { margin-left: auto; cursor: pointer; opacity: 0.9; font-size: calc(8px * var(--en-scale)); }
+.pwin-ctrls { display: flex; gap: 3px; margin-left: auto; }
+.pwin-ctrl { width: 16px; height: 14px; background: var(--btn-face); color: var(--btn-text); display: flex; align-items: center; justify-content: center; font-size: 8px; box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo); }
+.pwin-body { padding: 16px; }
+.flabel { font-family: var(--font-title); font-size: calc(7px * var(--en-scale)); color: var(--muted); letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 5px; line-height: 1.5; }
+.fval { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(19px * var(--en-scale)); color: var(--ink); line-height: 1.4; }
+.fval.gold { color: var(--accent); } .fval.fire { color: var(--campfire); } .fval.dim { color: var(--dark-muted); } .fval.calm { color: var(--calm); }
+.cntext { font-family: var(--font-ui), var(--font-cn-active); font-size: var(--cn-size-active); line-height: 1.55; }
+
+/* Date tile */
+.date-tile { width: 80px; min-width: 80px; text-align: center; background: var(--window); border: 2px solid var(--line); box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2); }
+.date-tile .dow { font-family: var(--font-title); font-size: calc(8px * var(--en-scale)); color: #fff; background: var(--campfire); padding: 5px 0; letter-spacing: 1px; }
+.date-tile .num { font-family: var(--font-title); font-size: calc(24px * var(--en-scale)); color: var(--ink); padding: 9px 0 5px; }
+.date-tile .mon { font-family: var(--font-ui); font-size: calc(16px * var(--en-scale)); color: var(--muted); padding-bottom: 7px; letter-spacing: 1px; }
+
+/* Dashboard */
+.proj-main { display: flex; gap: 16px; align-items: flex-start; padding: 18px; background: var(--window); border: 2px solid var(--line); border-top: 4px solid var(--blue); box-shadow: var(--shadow); cursor: pointer; margin-bottom: 12px; }
+.proj-main:hover, .proj-mini:hover, .paper-card:hover, .idea-card:hover, .mech-card:hover, .tl-box:hover { background: var(--window-2); }
+.proj-title { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(25px * var(--en-scale)); color: var(--ink); line-height: 1.15; margin-bottom: 4px; }
+.proj-sub { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(17px * var(--en-scale)); color: var(--muted); margin-bottom: 11px; line-height: 1.3; }
+.proj-status { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-title); font-size: calc(8px * var(--en-scale)); color: var(--blue); border: 1px solid var(--blue); padding: 5px 10px; letter-spacing: 1px; line-height: 1.4; }
+.proj-open { margin-top: 13px; font-family: var(--font-title); font-size: calc(8px * var(--en-scale)); color: var(--blue); letter-spacing: 1px; }
+.proj-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.proj-mini { padding: 14px; background: var(--window); border: 2px solid var(--line); border-left: 4px solid var(--dark-muted); box-shadow: var(--shadow); cursor: pointer; }
+.proj-mini .t { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(20px * var(--en-scale)); color: var(--ink); line-height: 1.15; margin-bottom: 3px; }
+.proj-mini .s { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(15px * var(--en-scale)); color: var(--muted); }
+.dash-mech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.dash-mech-col .h { font-family: var(--font-title); font-size: calc(8px * var(--en-scale)); color: var(--accent); letter-spacing: 1px; margin-bottom: 8px; }
+.dash-mech-item { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(18px * var(--en-scale)); color: var(--muted); line-height: 1.25; padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 6px; }
+
+/* Search / selects */
+.search { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px; background: var(--window); padding: 8px 12px; font-size: calc(18px * var(--en-scale)); color: var(--muted); box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi); border: 1px solid var(--line); }
+.search input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-ui), var(--font-cn-active); font-size: calc(20px * var(--en-scale)); color: var(--ink); }
+.search input::placeholder { color: var(--dark-muted); }
+.sortsel, .msel { font-family: var(--font-ui); font-size: calc(18px * var(--en-scale)); background: var(--window); color: var(--ink); border: 2px solid var(--line); padding: 7px 10px; box-shadow: inset 1px 1px 0 var(--bevel-hi); }
+
+/* Common cards */
+.tag { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(16px * var(--en-scale)); color: var(--accent); background: var(--tag-bg); border: 1px solid var(--tag-border); padding: 1px 8px; display: inline-block; }
+.tagrow { display: flex; gap: 5px; flex-wrap: wrap; }
+.tagchip { display: inline-block; font-family: var(--font-ui), var(--font-cn-active); font-size: calc(16px * var(--en-scale)); color: var(--accent); background: var(--tag-bg); border: 1px solid var(--tag-border); padding: 3px 9px; margin: 0 5px 6px 0; cursor: pointer; }
+.tagchip:hover { border-color: var(--titlebar-2); }
+.tagchip.active { background: linear-gradient(180deg, var(--titlebar-1), var(--titlebar-2)); color: #fff; border-color: var(--titlebar-2); }
+.sbadge { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-title); font-size: calc(8px * var(--en-scale)); padding: 3px 8px; letter-spacing: 1px; border: 1px solid; line-height: 1.45; white-space: nowrap; }
+.sbadge.fragment { color: var(--fragment); border-color: var(--fragment); }
+.sbadge.draft { color: var(--draft); border-color: var(--draft); }
+.sbadge.forged { color: var(--forged); border-color: var(--forged); }
+.acts { display: flex; gap: 5px; margin-top: 11px; opacity: 0; transition: opacity 0.12s; flex-wrap: wrap; }
+.paper-card:hover .acts, .mech-card:hover .acts, .tl-box:hover .acts, .idea-card:hover .acts, .campfire-box:hover .acts { opacity: 1; }
+.is-hidden { opacity: 0.45; border-style: dashed !important; }
+
+.library-layout { display: flex; gap: 14px; align-items: flex-start; }
+.library-list-wrap { flex: 1; min-width: 0; }
+.tag-col { width: 214px; min-width: 214px; align-self: flex-start; position: sticky; top: 0; }
+.paper-card, .idea-card, .mech-card { background: var(--window); border: 2px solid var(--line); box-shadow: var(--shadow); padding: 14px; margin-bottom: 10px; cursor: pointer; }
+.paper-card { border-left: 4px solid var(--accent); }
+.idea-card { border-left: 4px solid var(--campfire); }
+.mech-card { border-left: 4px solid var(--fragment); }
+.mech-card.s-draft { border-left-color: var(--draft); } .mech-card.s-forged { border-left-color: var(--forged); }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.card-title { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(21px * var(--en-scale)); color: var(--ink); line-height: 1.15; }
+.card-meta { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(16px * var(--en-scale)); color: var(--muted); margin-bottom: 8px; line-height: 1.25; }
+.card-analysis, .card-text, .card-desc { font-family: var(--font-ui), var(--font-cn-active); font-size: var(--cn-size-active); color: var(--muted); line-height: 1.45; margin-bottom: 9px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.paper-card.open .card-analysis, .idea-card.open .card-text, .mech-card.open .card-desc { -webkit-line-clamp: unset; color: var(--ink); }
+.card-extra { display: none; } .paper-card.open .card-extra, .idea-card.open .card-extra, .mech-card.open .card-extra { display: block; }
+
+/* Category switch */
+.cat-switch, .proj-switch { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.cat-tab, .proj-tab { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(17px * var(--en-scale)); color: var(--muted); background: var(--window); border: 2px solid var(--line); padding: 6px 13px; cursor: pointer; box-shadow: inset 1px 1px 0 var(--bevel-hi); }
+.cat-tab:hover, .proj-tab:hover { color: var(--ink); } .cat-tab.active, .proj-tab.active { color: var(--blue); border-color: var(--blue); background: var(--window-2); }
+.cat-toolbar, .quest-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.qt-label { font-family: var(--font-ui); font-size: calc(17px * var(--en-scale)); color: var(--muted); margin-right: 4px; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 4px; bottom: 4px; width: 2px; background: var(--line); }
+.tl-entry { position: relative; margin-bottom: 14px; }
+.tl-dot { position: absolute; left: -24px; top: 14px; width: 11px; height: 11px; background: var(--line); border: 2px solid var(--dark-muted); }
+.tl-entry:first-child .tl-dot { background: var(--blue); border-color: var(--blue); }
+.tl-box { background: var(--window); border: 2px solid var(--line); border-left: 4px solid var(--line); box-shadow: var(--shadow); padding: 14px; }
+.tl-entry:first-child .tl-box { border-left-color: var(--blue); }
+.tl-date { font-family: var(--font-title); font-size: calc(8px * var(--en-scale)); color: var(--muted); margin-bottom: 9px; }
+.tl-entry:first-child .tl-date { color: var(--blue); }
+.tl-text { font-family: var(--font-ui), var(--font-cn-active); font-size: var(--cn-size-active); color: var(--ink); line-height: 1.55; white-space: pre-wrap; }
+
+/* Campfire */
+.campfire-box { background: var(--campfire-grad); border: 2px solid var(--campfire); box-shadow: var(--shadow); padding: 24px; margin-bottom: 14px; }
+.cf-week { font-family: var(--font-title); font-size: calc(9px * var(--en-scale)); color: var(--campfire); letter-spacing: 1px; margin-bottom: 20px; }
+.cf-block { margin-bottom: 18px; }
+.cf-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cf-next { background: rgba(120,120,120,0.07); border: 1px dashed var(--campfire); padding: 14px; }
+.cf-block .fval, .cf-next .fval { font-size: var(--cn-size-active); font-family: var(--font-ui), var(--font-cn-active); }
+
+/* Settings */
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.setting-row:last-child { border-bottom: none; }
+.setting-name { font-family: var(--font-title); font-size: calc(8px * var(--en-scale)); color: var(--muted); letter-spacing: 1px; line-height: 1.5; }
+.segment { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.seg-btn { font-family: var(--font-title); font-size: calc(7px * var(--en-scale)); padding: 7px 8px; background: var(--btn-face); color: var(--muted); border: 1px solid var(--line); cursor: pointer; box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo); letter-spacing: 0.5px; }
+.seg-btn.active { color: var(--nav-active-text); background: var(--nav-active-bg); border-color: var(--titlebar-2); }
+.data-actions { display: flex; flex-direction: column; gap: 8px; }
+.data-actions .btn { width: 100%; text-align: center; }
+.save-status { font-family: var(--font-ui); font-size: calc(17px * var(--en-scale)); color: var(--muted); margin-top: 10px; line-height: 1.35; }
+
+/* Modal */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 50; }
+.modal-bg.open { display: flex; }
+.modal { width: 620px; max-width: 92vw; max-height: 88vh; overflow-y: auto; background: var(--window); border: 2px solid var(--line); box-shadow: 7px 7px 0 rgba(0,0,0,0.3); }
+.modal-bar { background: linear-gradient(180deg, var(--titlebar-1), var(--titlebar-2)); color: var(--titlebar-text); padding: 8px 8px 8px 14px; font-family: var(--font-title); font-size: calc(9px * var(--en-scale)); letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; line-height: 1.5; }
+.modal-bar .x { width: 18px; height: 16px; background: var(--btn-face); color: var(--btn-text); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo); font-size: 9px; }
+.modal-body { padding: 20px; }
+.modal-body label { font-family: var(--font-title); font-size: calc(7px * var(--en-scale)); color: var(--muted); letter-spacing: 1px; display: block; margin: 14px 0 6px; line-height: 1.4; }
+.modal-body label:first-child { margin-top: 0; }
+.modal-body input, .modal-body textarea, .modal-body select { width: 100%; background: var(--window-2); color: var(--ink); font-family: var(--font-ui), var(--font-cn-active); font-size: var(--cn-size-active); padding: 12px 14px; outline: none; border: 1px solid var(--line); box-shadow: inset 1px 1px 0 var(--bevel-lo2); }
+.modal-body textarea { resize: vertical; min-height: 110px; line-height: 1.45; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.note { font-family: var(--font-ui), var(--font-cn-active); font-size: calc(15px * var(--en-scale)); color: var(--dark-muted); margin-top: 8px; font-style: italic; line-height: 1.4; }
+
+/* Login */
+.login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 18px; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 4px), linear-gradient(180deg, var(--desktop-1), var(--desktop-2)); }
+.login-window { width: 430px; max-width: 96vw; background: var(--window); border: 2px solid var(--line); box-shadow: 7px 7px 0 rgba(0,0,0,0.25); }
+.login-body { padding: 22px; }
+.login-body label { font-family: var(--font-title); font-size: 8px; color: var(--muted); display: block; margin: 14px 0 6px; letter-spacing: 1px; }
+.login-body input { width: 100%; background: var(--window-2); color: var(--ink); font-family: var(--font-ui); font-size: 22px; padding: 11px 12px; border: 1px solid var(--line); box-shadow: inset 1px 1px 0 var(--bevel-lo2); outline: none; }
+.login-error { font-family: var(--font-ui); font-size: 18px; color: var(--soft-del); margin-top: 10px; min-height: 20px; }
+</style>
+</head>
+<body data-cn-font="songti" data-cn-size="m" data-en-font="pixel" data-en-size="m">
+<div class="login-screen" id="loginScreen">
+  <div class="login-window">
+    <div class="pwin-bar">🗃️ LABOR CABINET LOGIN<div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div>
+    <div class="login-body">
+      <label>EMAIL</label>
+      <input id="loginEmail" autocomplete="email" />
+      <label>PASSWORD</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" />
+      <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn" id="loginBtn">LOG IN</button></div>
+      <div class="login-error" id="loginError"></div>
+      <div class="note">Use the Email + Password user you created in Supabase Auth.</div>
+    </div>
+  </div>
+</div>
+
+<div class="app hidden" id="appRoot">
+  <aside class="sidebar">
+    <div class="brand">🗃️ LABOR CABINET</div>
+    <div class="nav-wrap">
+      <button class="nav-btn active" data-section="dashboard"><span class="ic">🏠</span><span>Study Room</span></button>
+      <button class="nav-btn" data-section="timeline"><span class="ic">⚔️</span><span>Main Quest</span></button>
+      <button class="nav-btn" data-section="papers"><span class="ic">📜</span><span>Paper Archive</span></button>
+      <button class="nav-btn" data-section="mechanisms"><span class="ic">⚒️</span><span>Mech. Forge</span></button>
+      <button class="nav-btn" data-section="ideas"><span class="ic">🍺</span><span>Idea Tavern</span></button>
+      <button class="nav-btn" data-section="campfire"><span class="ic">🔥</span><span>Campfire</span></button>
+      <button class="nav-btn" data-section="settings"><span class="ic">⚙️</span><span>Settings</span></button>
+    </div>
+    <div class="sidebar-foot">
+      <div class="user-status" id="userStatus">SIGNED OUT</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="section active" data-page="dashboard">
+      <div class="page-head"><span class="page-title">STUDY ROOM</span></div>
+      <div class="page-sub">Welcome back, researcher. Your study is as you left it.</div>
+      <div id="dashProjects"></div>
+      <div class="pwin" style="margin-top:14px">
+        <div class="pwin-bar">⚒️ MECHANISM INVENTORY <span class="jump" data-jump="mechanisms">See all ▶</span><div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div>
+        <div class="pwin-body"><div class="dash-mech-grid" id="dashMech"></div></div>
+      </div>
+      <div class="pwin" style="cursor:pointer" data-jump="campfire">
+        <div class="pwin-bar">🔥 LATEST CAMPFIRE <span class="jump">Sit by the fire ▶</span><div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div>
+        <div class="pwin-body"><span class="flabel" id="dashCfWeek"></span><span class="fval" id="dashCampfire"></span></div>
+      </div>
+    </div>
+
+    <div class="section" data-page="timeline">
+      <div class="page-head"><button class="back-btn" data-act="back">← Back</button><span class="page-title blue">⚔️ MAIN QUEST</span></div>
+      <div class="page-sub" id="tlProjSub"></div>
+      <div class="toolbar">
+        <select class="sortsel" id="questSortSel">
+          <option value="updated">Sort: Last updated</option>
+          <option value="manual">Sort: Manual order</option>
+          <option value="title">Sort: Title A–Z</option>
+        </select>
+        <span class="spacer"></span>
+        <button class="btn ghost" data-act="toggle-hidden">👁 Show Hidden</button>
+        <button class="btn" data-act="add-quest">+ New Quest</button>
+        <button class="btn" data-act="add-entry">+ New Entry</button>
+      </div>
+      <div class="proj-switch" id="projSwitch"></div>
+      <div class="quest-toolbar" id="questToolbar"></div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div class="section" data-page="papers">
+      <div class="page-head"><button class="back-btn" data-act="back">← Back</button><span class="page-title">📜 PAPER ARCHIVE</span></div>
+      <div class="page-sub"><span id="paperCount"></span> papers · search and tags combine.</div>
+      <div class="toolbar">
+        <div class="search">🔎 <input id="paperSearch" placeholder="Search title, author, tags, or analysis..." /></div>
+        <button class="btn ghost" data-act="toggle-hidden">👁 Show Hidden</button>
+        <button class="btn" data-act="add-paper">+ Add Paper</button>
+      </div>
+      <div class="library-layout"><div class="library-list-wrap" id="paperList"></div><div class="pwin tag-col"><div class="pwin-bar">🏷️ TAGS<div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div><div class="pwin-body"><div id="tagCloud"></div></div></div></div>
+    </div>
+
+    <div class="section" data-page="mechanisms">
+      <div class="page-head"><button class="back-btn" data-act="back">← Back</button><span class="page-title">⚒️ MECHANISM FORGE</span></div>
+      <div class="page-sub">Choose a category, then search or filter its mechanism cards.</div>
+      <div class="toolbar">
+        <div class="search">🔎 <input id="mechSearch" placeholder="Search mechanism name, description, tags..." /></div>
+        <button class="btn ghost" data-act="toggle-hidden">👁 Show Hidden</button>
+        <button class="btn" data-act="add-mech">+ Add Mechanism</button>
+        <button class="btn" data-act="add-mech-cat">+ Add Category</button>
+      </div>
+      <div class="cat-switch" id="mechCatSwitch"></div>
+      <div class="cat-toolbar" id="mechCatToolbar"></div>
+      <div class="library-layout"><div class="library-list-wrap" id="mechList"></div><div class="pwin tag-col"><div class="pwin-bar">🏷️ TAGS<div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div><div class="pwin-body"><div id="mechTagCloud"></div></div></div></div>
+    </div>
+
+    <div class="section" data-page="ideas">
+      <div class="page-head"><button class="back-btn" data-act="back">← Back</button><span class="page-title fire">🍺 IDEA TAVERN</span></div>
+      <div class="page-sub">Sort stray thoughts by category, search, or tags.</div>
+      <div class="toolbar">
+        <div class="search">🔎 <input id="ideaSearch" placeholder="Search idea, source, tags, or date..." /></div>
+        <button class="btn ghost" data-act="toggle-hidden">👁 Show Hidden</button>
+        <button class="btn" data-act="add-idea">+ Log Idea</button>
+        <button class="btn" data-act="add-idea-cat">+ Add Category</button>
+      </div>
+      <div class="cat-switch" id="ideaCatSwitch"></div>
+      <div class="cat-toolbar" id="ideaCatToolbar"></div>
+      <div class="library-layout"><div class="library-list-wrap" id="ideaList"></div><div class="pwin tag-col"><div class="pwin-bar">🏷️ TAGS<div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div><div class="pwin-body"><div id="ideaTagCloud"></div></div></div></div>
+    </div>
+
+    <div class="section" data-page="campfire">
+      <div class="page-head"><button class="back-btn" data-act="back">← Back</button><span class="page-title fire">🔥 WEEKLY CAMPFIRE</span></div>
+      <div class="page-sub">Take out the week's scattered notes. Keep what holds; set down the rest.</div>
+      <div class="toolbar"><span class="spacer"></span><button class="btn ghost" data-act="toggle-hidden">👁 Show Hidden</button><button class="btn" data-act="add-cf">+ New Campfire</button></div>
+      <div id="campfireWrap"></div>
+    </div>
+
+    <div class="section" data-page="settings">
+      <div class="page-head"><button class="back-btn" data-act="back">← Back</button><span class="page-title">⚙️ SETTINGS</span></div>
+      <div class="page-sub">Appearance, typography, backup, and account controls.</div>
+      <div class="settings-grid">
+        <div class="pwin"><div class="pwin-bar">▣ APPEARANCE<div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div><div class="pwin-body" id="appearanceSettings"></div></div>
+        <div class="pwin"><div class="pwin-bar">▣ TYPOGRAPHY<div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div><div class="pwin-body" id="typeSettings"></div></div>
+        <div class="pwin"><div class="pwin-bar">▣ DATA<div class="pwin-ctrls"><span class="pwin-ctrl">─</span><span class="pwin-ctrl">□</span></div></div><div class="pwin-body"><div class="data-actions">
+          <button class="btn" data-act="export-json">EXPORT JSON</button>
+          <button class="btn" data-act="import-json">IMPORT JSON</button>
+          <button class="btn" data-act="cloud-backup">SAVE CLOUD BACKUP</button>
+          <button class="btn ghost" data-act="reset-empty">RESET EMPTY</button>
+          <button class="btn del" data-act="logout">LOG OUT</button>
+        </div><div class="save-status" id="saveStatus">Cloud status: —</div><input id="importFile" type="file" accept="application/json,.json" class="hidden" /></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal"><div class="modal-bar"><span id="modalTitle">NEW</span><span class="x" id="modalX">✕</span></div><div class="modal-body" id="modalBody"></div></div></div>
+
+<script>
+const SUPABASE_URL = "https://fnkotzrhrqgvvmeraolo.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZua290enJocnFndnZtZXJhb2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4OTQ0MzIsImV4cCI6MjA5NjQ3MDQzMn0.xwUydlYYh_P36FcbSpbJ2U-k2mZ63sGOM5VCbzQpvMw";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>(s??"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const valAttr=s=>(s??"").toString().replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const splitTags=s=>(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+function todayStr(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,"0"); const day=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${day}`; }
+function todayTile(){ const d=new Date(), dows=["SUN","MON","TUE","WED","THU","FRI","SAT"], mons=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]; return {dow:dows[d.getDay()],num:String(d.getDate()).padStart(2,"0"),mon:mons[d.getMonth()]+" "+d.getFullYear()}; }
+const sIcon={fragment:"◇",draft:"◈",forged:"◆"}, sLabel={fragment:"Fragment",draft:"Draft",forged:"Forged"};
+const badge=s=>`<span class="sbadge ${s}">${sIcon[s]||"◇"} ${sLabel[s]||s}</span>`;
+const tagsHtml=a=>`<div class="tagrow">${(a||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`;
+const actRow=(buttons)=>`<div class="acts">${buttons}</div>`;
+
+let user=null, appReady=false, saveTimer=null, lastSaved="";
+let projects=[], currentProject="", questSort="updated", papers=[], mechCats=[], currentMechCat="", ideaCats=[], currentIdeaCat="", campfires=[];
+let showHidden=false;
+let selectedPaperTags=new Set(), selectedIdeaTags=new Set(), selectedMechTags=new Set();
+let settings={theme_mode:"light",cn_font:"songti",cn_size:"m",en_font:"pixel",en_size:"m"};
+
+function defaultState(){
+  return {
+    projects:[],
+    currentProject:"",
+    questSort:"updated",
+    papers:[],
+    mechCats:[],
+    currentMechCat:"",
+    ideaCats:[],
+    currentIdeaCat:"",
+    campfires:[]
+  };
+}
+
+function stateData(){ return {projects,currentProject,questSort,papers,mechCats,currentMechCat,ideaCats,currentIdeaCat,campfires}; }
+function hydrate(data){
+  const d = data && typeof data === "object" ? data : defaultState();
+  projects = Array.isArray(d.projects) ? d.projects : defaultState().projects;
+  currentProject = d.currentProject || (projects[0] && projects[0].id) || "";
+  questSort = d.questSort || "updated";
+  papers = Array.isArray(d.papers) ? d.papers : [];
+  mechCats = Array.isArray(d.mechCats) ? d.mechCats : [];
+  currentMechCat = d.currentMechCat || (mechCats[0] && mechCats[0].id) || "";
+  if (Array.isArray(d.ideaCats)) ideaCats = d.ideaCats;
+  else if (Array.isArray(d.ideas)) ideaCats = [{id:"general",name:"General",ideas:d.ideas}];
+  else ideaCats = [];
+  currentIdeaCat = d.currentIdeaCat || (ideaCats[0] && ideaCats[0].id) || "";
+  campfires = Array.isArray(d.campfires) ? d.campfires : [];
+}
+
+function applySettings(){
+  document.body.classList.toggle("dark", settings.theme_mode === "dark");
+  document.body.dataset.cnFont = settings.cn_font || "songti";
+  document.body.dataset.cnSize = settings.cn_size || "m";
+  document.body.dataset.enFont = settings.en_font || "pixel";
+  document.body.dataset.enSize = settings.en_size || "m";
+}
+async function loadSettings(){
+  const {data, error} = await sb.from("cabinet_settings").select("theme_mode,cn_font,cn_size,en_font,en_size").eq("user_id", user.id).maybeSingle();
+  if (error) console.error(error);
+  if (data) settings = {...settings, ...data};
+  else await sb.from("cabinet_settings").insert({user_id:user.id, ...settings});
+  applySettings();
+}
+async function saveSettings(){
+  applySettings(); renderSettings();
+  const {error} = await sb.from("cabinet_settings").upsert({user_id:user.id, ...settings});
+  if (error) setSaveStatus("Settings error: "+error.message);
+  else setSaveStatus("Settings saved: "+new Date().toLocaleString());
+}
+async function loadState(){
+  const {data, error} = await sb.from("cabinet_state").select("data").eq("user_id", user.id).maybeSingle();
+  if (error) { console.error(error); hydrate(defaultState()); setSaveStatus("Load error: "+error.message); return; }
+  if (data && data.data) hydrate(data.data);
+  else { hydrate(defaultState()); await saveStateNow(); }
+}
+function queueSave(){ if(!appReady || !user) return; setSaveStatus("Cloud status: saving..."); clearTimeout(saveTimer); saveTimer=setTimeout(saveStateNow, 650); }
+async function saveStateNow(){
+  if(!user) return;
+  const payload={user_id:user.id, data:stateData(), schema_version:2};
+  const {error}=await sb.from("cabinet_state").upsert(payload);
+  if(error){ console.error(error); setSaveStatus("Cloud error: "+error.message); }
+  else { lastSaved=new Date().toLocaleString(); setSaveStatus("Cloud status: saved " + lastSaved); }
+}
+function setSaveStatus(t){ const el=document.getElementById("saveStatus"); if(el) el.textContent=t; }
+
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){ user=session.user; await enterApp(); } else showLogin();
+}
+function showLogin(){ document.getElementById("loginScreen").classList.remove("hidden"); document.getElementById("appRoot").classList.add("hidden"); }
+async function enterApp(){
+  document.getElementById("loginScreen").classList.add("hidden"); document.getElementById("appRoot").classList.remove("hidden");
+  document.getElementById("userStatus").innerHTML = `SIGNED IN<br>${esc(user.email||"")}`;
+  await loadSettings(); await loadState(); appReady=true; renderAll(); setSaveStatus(lastSaved ? "Cloud status: saved "+lastSaved : "Cloud status: loaded");
+}
+
+document.getElementById("loginBtn").onclick = async()=>{
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const errEl=document.getElementById("loginError"); errEl.textContent="Signing in...";
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){ errEl.textContent=error.message; return; }
+  user=data.user; errEl.textContent=""; await enterApp();
+};
+
+function switchSection(page){
+  document.querySelectorAll(".section").forEach(s=>s.classList.toggle("active", s.dataset.page===page));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.section===page));
+  if(page==="settings") renderSettings();
+}
+
+function findProj(id){ return projects.find(p=>p.id===id); }
+function lastTs(p){ const ds=(p.log||[]).map(e=>Date.parse(e.date)).filter(n=>!isNaN(n)); return Math.max(p.created||0, ...(ds.length?ds:[0])); }
+function sortedProjects(){ let a=[...projects]; if(questSort==="updated") a.sort((x,y)=>lastTs(y)-lastTs(x)); else if(questSort==="title") a.sort((x,y)=>x.title.localeCompare(y.title)); return a; }
+function visProjects(){ return sortedProjects().filter(p=>showHidden||!p.hidden); }
+function mainId(){ const v=visProjects(); return v.length?v[0].id:null; }
+function currentMechCategory(){ return mechCats.find(c=>c.id===currentMechCat) || mechCats[0]; }
+function currentIdeaCategory(){ return ideaCats.find(c=>c.id===currentIdeaCat) || ideaCats[0]; }
+
+function renderDashProjects(){
+  const vis=visProjects(), TODAY=todayTile();
+  if(!vis.length){ dashProjects.innerHTML=`<div class="fval dim">No quests yet. Add one in Main Quest.</div>`; return; }
+  const [m,...rest]=vis;
+  dashProjects.innerHTML=`<div class="proj-main ${m.hidden?'is-hidden':''}" data-jump="timeline" data-project="${m.id}"><div class="date-tile"><div class="dow">${TODAY.dow}</div><div class="num">${TODAY.num}</div><div class="mon">${TODAY.mon}</div></div><div style="flex:1"><div class="proj-title">${esc(m.title)}</div><div class="proj-sub">${esc(m.sub)}</div>${m.status?`<span class="proj-status">● ${esc(m.status)}</span>`:""}<div class="proj-open">▶ OPEN TIMELINE</div></div></div>${rest.length?`<div class="proj-row">${rest.map(p=>`<div class="proj-mini ${p.hidden?'is-hidden':''}" data-jump="timeline" data-project="${p.id}"><div class="t">${esc(p.title)}</div><div class="s">${esc(p.sub)}</div></div>`).join("")}</div>`:""}`;
+}
+function renderDashMech(){
+  dashMech.innerHTML=mechCats.slice(0,3).map(cat=>{ const items=(cat.mechs||[]).filter(m=>!m.hidden).slice(0,3); return `<div class="dash-mech-col"><div class="h">${esc(cat.name)}</div>${items.map(m=>`<div class="dash-mech-item"><span style="color:var(--${m.status})">${sIcon[m.status]||"◇"}</span>${esc(m.name)}</div>`).join("")||'<div class="dash-mech-item">—</div>'}</div>`; }).join("");
+  const cf=campfires.filter(c=>!c.hidden)[0]; dashCfWeek.textContent=cf?cf.week.replace("WEEK OF ","Week of "):""; dashCampfire.textContent=cf?cf.understood:"No campfire entries yet.";
+}
+function renderTimeline(pid=currentProject){
+  if(!pid || !findProj(pid)) pid=mainId(); currentProject=pid;
+  if(!pid){ tlProjSub.textContent=""; projSwitch.innerHTML=""; questToolbar.innerHTML=""; timeline.innerHTML=`<div class="fval dim">No quests yet. Use “+ New Quest”.</div>`; return; }
+  const p=findProj(pid), vis=visProjects(), main=mainId(); tlProjSub.textContent=p.title;
+  questSortSel.value=questSort;
+  projSwitch.innerHTML=vis.map(pr=>`<button class="proj-tab ${pr.id===pid?'active':''} ${pr.hidden?'is-hidden':''}" data-act="proj" data-proj="${pr.id}">${pr.id===main?'★ ':''}${esc(pr.title)}</button>`).join("");
+  const manual=questSort==="manual";
+  questToolbar.innerHTML=`<span class="qt-label">This quest:</span><button class="act" data-act="edit-quest" data-id="${p.id}">✎ Edit</button><button class="act" data-act="hide-quest" data-id="${p.id}">${p.hidden?'👁 Unhide':'⊘ Hide'}</button><button class="act del" data-act="del-quest" data-id="${p.id}">🗑 Delete</button>${manual?`<button class="act" data-act="move-quest" data-id="${p.id}" data-dir="up">↑ Up</button><button class="act" data-act="move-quest" data-id="${p.id}" data-dir="down">↓ Down</button>`:""}`;
+  const entries=(p.log||[]).filter(e=>showHidden||!e.hidden);
+  timeline.innerHTML=entries.length?entries.map(e=>`<div class="tl-entry"><div class="tl-dot"></div><div class="tl-box ${e.hidden?'is-hidden':''}"><div class="tl-date">${esc(e.date)}</div><div class="tl-text">${esc(e.text)}</div>${actRow(`<button class="act" data-act="edit-entry" data-pid="${p.id}" data-eid="${e.id}">✎ Edit</button><button class="act" data-act="hide-entry" data-pid="${p.id}" data-eid="${e.id}">${e.hidden?'👁 Unhide':'⊘ Hide'}</button><button class="act del" data-act="del-entry" data-pid="${p.id}" data-eid="${e.id}">🗑 Delete</button>`)}</div></div>`).join(""):`<div class="fval dim">No entries yet — add your first with “+ New Entry”.</div>`;
+}
+function renderPapers(){
+  const q=(paperSearch.value||"").trim().toLowerCase(); let list=papers.filter(p=>showHidden||!p.hidden);
+  if(selectedPaperTags.size) list=list.filter(p=>[...selectedPaperTags].every(t=>(p.tags||[]).includes(t)));
+  if(q) list=list.filter(p=>(p.title+p.authors+p.journal+p.analysis+(p.tags||[]).join(" ")).toLowerCase().includes(q));
+  paperCount.textContent=papers.filter(p=>showHidden||!p.hidden).length;
+  paperList.innerHTML=list.length?list.map(p=>`<div class="paper-card ${p.hidden?'is-hidden':''}"><div class="card-top"><div class="card-title">${esc(p.title)}</div>${badge(p.status)}</div><div class="card-meta">${esc(p.authors)} · ${esc(p.journal)}</div><div class="card-analysis">${esc(p.analysis)}</div><div class="card-extra">${tagsHtml(p.tags)}</div>${actRow(`<button class="act" data-act="edit-paper" data-id="${p.id}">✎ Edit</button><button class="act" data-act="hide-paper" data-id="${p.id}">${p.hidden?'👁 Unhide':'⊘ Hide'}</button><button class="act del" data-act="del-paper" data-id="${p.id}">🗑 Delete</button>`)}</div>`).join(""):`<div class="fval dim">No papers match the current filters.</div>`;
+}
+function allPaperTags(){ const s=new Set(); papers.forEach(p=>{ if(showHidden||!p.hidden) (p.tags||[]).forEach(t=>s.add(t)); }); return [...s].sort(); }
+function renderPaperTags(){ tagCloud.innerHTML=allPaperTags().map(x=>`<span class="tagchip ${selectedPaperTags.has(x)?'active':''}" data-act="paper-tag" data-tag="${valAttr(x)}">${esc(x)}</span>`).join("")+(selectedPaperTags.size?`<div style="margin-top:10px"><button class="btn ghost" data-act="clear-paper-tags">Clear (${selectedPaperTags.size})</button></div>`:""); }
+function renderMechs(){
+  const cat=currentMechCategory(); if(!cat){ mechCatSwitch.innerHTML=""; mechCatToolbar.innerHTML=""; mechList.innerHTML=`<div class="fval dim">No categories yet.</div>`; mechTagCloud.innerHTML=""; return; }
+  currentMechCat=cat.id;
+  mechCatSwitch.innerHTML=mechCats.map(c=>`<button class="cat-tab ${c.id===cat.id?'active':''}" data-act="mech-cat" data-id="${c.id}">${esc(c.name)}</button>`).join("");
+  mechCatToolbar.innerHTML=`<span class="qt-label">This category:</span><button class="act" data-act="rename-mech-cat" data-id="${cat.id}">✎ Rename</button><button class="act del" data-act="del-mech-cat" data-id="${cat.id}">🗑 Delete</button>`;
+  const q=(mechSearch.value||"").trim().toLowerCase(); let list=(cat.mechs||[]).filter(m=>showHidden||!m.hidden);
+  if(selectedMechTags.size) list=list.filter(m=>[...selectedMechTags].every(t=>(m.tags||[]).includes(t)));
+  if(q) list=list.filter(m=>(m.name+m.desc+m.status+m.date+(m.tags||[]).join(" ")).toLowerCase().includes(q));
+  mechList.innerHTML=list.length?list.map(m=>`<div class="mech-card s-${m.status} ${m.hidden?'is-hidden':''}"><div class="card-top"><div><div class="card-title">${esc(m.name)}</div><div class="card-meta">${esc(m.date||"")}</div></div>${badge(m.status)}</div><div class="card-desc">${esc(m.desc)}</div><div class="card-extra">${tagsHtml(m.tags)}</div>${actRow(`<button class="act" data-act="edit-mech" data-cat="${cat.id}" data-mid="${m.id}">✎ Edit</button><button class="act" data-act="hide-mech" data-cat="${cat.id}" data-mid="${m.id}">${m.hidden?'👁 Unhide':'⊘ Hide'}</button><button class="act del" data-act="del-mech" data-cat="${cat.id}" data-mid="${m.id}">🗑 Delete</button>`)}</div>`).join(""):`<div class="fval dim">No mechanisms match this category and filter.</div>`;
+}
+function allMechTags(){ const cat=currentMechCategory(); const s=new Set(); if(cat) (cat.mechs||[]).forEach(m=>{ if(showHidden||!m.hidden) (m.tags||[]).forEach(t=>s.add(t)); }); return [...s].sort(); }
+function renderMechTags(){ mechTagCloud.innerHTML=allMechTags().map(x=>`<span class="tagchip ${selectedMechTags.has(x)?'active':''}" data-act="mech-tag" data-tag="${valAttr(x)}">${esc(x)}</span>`).join("")+(selectedMechTags.size?`<div style="margin-top:10px"><button class="btn ghost" data-act="clear-mech-tags">Clear (${selectedMechTags.size})</button></div>`:""); }
+function renderIdeas(){
+  const cat=currentIdeaCategory(); if(!cat){ ideaCatSwitch.innerHTML=""; ideaCatToolbar.innerHTML=""; ideaList.innerHTML=`<div class="fval dim">No idea categories yet.</div>`; ideaTagCloud.innerHTML=""; return; }
+  currentIdeaCat=cat.id;
+  ideaCatSwitch.innerHTML=ideaCats.map(c=>`<button class="cat-tab ${c.id===cat.id?'active':''}" data-act="idea-cat" data-id="${c.id}">${esc(c.name)}</button>`).join("");
+  ideaCatToolbar.innerHTML=`<span class="qt-label">This category:</span><button class="act" data-act="rename-idea-cat" data-id="${cat.id}">✎ Rename</button><button class="act del" data-act="del-idea-cat" data-id="${cat.id}">🗑 Delete</button>`;
+  const q=(ideaSearch.value||"").trim().toLowerCase(); let list=(cat.ideas||[]).filter(i=>showHidden||!i.hidden);
+  if(selectedIdeaTags.size) list=list.filter(i=>[...selectedIdeaTags].every(t=>(i.tags||[]).includes(t)));
+  if(q) list=list.filter(i=>(i.text+i.source+i.date+(i.tags||[]).join(" ")).toLowerCase().includes(q));
+  ideaList.innerHTML=list.length?list.map(i=>`<div class="idea-card ${i.hidden?'is-hidden':''}"><div class="card-text">${esc(i.text)}</div><div class="card-meta">${i.source?'— '+esc(i.source):''}${i.source&&i.date?' · ':''}${esc(i.date||"")}</div><div class="card-extra">${tagsHtml(i.tags)}</div>${actRow(`<button class="act" data-act="edit-idea" data-cat="${cat.id}" data-id="${i.id}">✎ Edit</button><button class="act" data-act="hide-idea" data-cat="${cat.id}" data-id="${i.id}">${i.hidden?'👁 Unhide':'⊘ Hide'}</button><button class="act del" data-act="del-idea" data-cat="${cat.id}" data-id="${i.id}">🗑 Delete</button>`)}</div>`).join(""):`<div class="fval dim">No ideas match this category and filter.</div>`;
+}
+function allIdeaTags(){ const cat=currentIdeaCategory(); const s=new Set(); if(cat) (cat.ideas||[]).forEach(i=>{ if(showHidden||!i.hidden) (i.tags||[]).forEach(t=>s.add(t)); }); return [...s].sort(); }
+function renderIdeaTags(){ ideaTagCloud.innerHTML=allIdeaTags().map(x=>`<span class="tagchip ${selectedIdeaTags.has(x)?'active':''}" data-act="idea-tag" data-tag="${valAttr(x)}">${esc(x)}</span>`).join("")+(selectedIdeaTags.size?`<div style="margin-top:10px"><button class="btn ghost" data-act="clear-idea-tags">Clear (${selectedIdeaTags.size})</button></div>`:""); }
+function renderCampfire(){
+  const list=campfires.filter(c=>showHidden||!c.hidden);
+  campfireWrap.innerHTML=list.length?list.map(c=>`<div class="campfire-box ${c.hidden?'is-hidden':''}"><div class="cf-week">${esc(c.week)}</div><div class="cf-block"><span class="flabel">✦ Most important thing I understood</span><span class="fval">${esc(c.understood)}</span></div><div class="cf-block"><span class="flabel">✦ Which previous idea changed</span><span class="fval">${esc(c.changed)}</span></div><div class="cf-block"><span class="flabel">✦ Which question kept returning</span><span class="fval calm">${esc(c.returning)}</span></div><div class="cf-split cf-block"><div><span class="flabel">✦ Keep</span><span class="fval" style="color:var(--forged)">${esc(c.keep)}</span></div><div><span class="flabel">✦ Set down</span><span class="fval dim">${esc(c.discard)}</span></div></div><div class="cf-next"><span class="flabel">🗡️ Next main quest</span><span class="fval fire">${esc(c.next)}</span></div>${actRow(`<button class="act" data-act="edit-cf" data-id="${c.id}">✎ Edit</button><button class="act" data-act="hide-cf" data-id="${c.id}">${c.hidden?'👁 Unhide':'⊘ Hide'}</button><button class="act del" data-act="del-cf" data-id="${c.id}">🗑 Delete</button>`)}</div>`).join(""):`<div class="fval dim">No campfire entries yet. Light one with “+ New Campfire”.</div>`;
+}
+function renderSettings(){
+  appearanceSettings.innerHTML=`<div class="setting-row"><div class="setting-name">THEME</div><div class="segment">${seg("theme_mode",[["light","LIGHT"],["dark","DARK"]])}</div></div>`;
+  typeSettings.innerHTML=`<div class="setting-row"><div class="setting-name">CN FONT</div><div class="segment">${seg("cn_font",[["songti","SONGTI"],["pixel","PIXEL"]])}</div></div><div class="setting-row"><div class="setting-name">CN SIZE</div><div class="segment">${seg("cn_size",[["s","S"],["m","M"],["l","L"]])}</div></div><div class="setting-row"><div class="setting-name">EN FONT</div><div class="segment">${seg("en_font",[["pixel","PIXEL"],["terminal","TERMINAL"]])}</div></div><div class="setting-row"><div class="setting-name">EN SIZE</div><div class="segment">${seg("en_size",[["s","S"],["m","M"],["l","L"]])}</div></div>`;
+}
+function seg(key, opts){ return opts.map(([v,label])=>`<button class="seg-btn ${settings[key]===v?'active':''}" data-act="set-setting" data-key="${key}" data-val="${v}">${label}</button>`).join(""); }
+function renderAll(){ renderDashProjects(); renderDashMech(); renderTimeline(currentProject); renderPapers(); renderPaperTags(); renderMechs(); renderMechTags(); renderIdeas(); renderIdeaTags(); renderCampfire(); renderSettings(); document.querySelectorAll('[data-act="toggle-hidden"]').forEach(b=>b.textContent=showHidden?'🚫 Hide Hidden':'👁 Show Hidden'); }
+
+function closeModal(){ modalBg.classList.remove("open"); }
+function openForm(title, fields, onSave){
+  modalTitle.textContent=title;
+  modalBody.innerHTML=fields.map((f,i)=>{ const lab=`<label>${esc(f.label)}</label>`; if(f.type==="textarea") return lab+`<textarea id="mf${i}" placeholder="${valAttr(f.ph||"")}">${esc(f.value||"")}</textarea>`; if(f.type==="select") return lab+`<select id="mf${i}">${f.options.map(o=>`<option value="${valAttr(o)}" ${o===f.value?'selected':''}>${esc(o)}</option>`).join("")}</select>`; return lab+`<input id="mf${i}" placeholder="${valAttr(f.ph||"")}" value="${valAttr(f.value||"")}" />`; }).join("")+`<div class="modal-foot"><button class="btn ghost" id="mCancel">Cancel</button><button class="btn" id="mSave">Save</button></div>`;
+  modalBg.classList.add("open"); document.getElementById("mCancel").onclick=closeModal; document.getElementById("mSave").onclick=()=>{ const vals=fields.map((_,i)=>document.getElementById("mf"+i).value); onSave(vals); closeModal(); renderAll(); queueSave(); };
+}
+function confirmModal(msg,onYes){ modalTitle.textContent="CONFIRM"; modalBody.innerHTML=`<div class="fval" style="margin-bottom:14px">${esc(msg)}</div><div class="modal-foot"><button class="btn ghost" id="mCancel">Cancel</button><button class="btn del" id="mYes">Confirm</button></div>`; modalBg.classList.add("open"); document.getElementById("mCancel").onclick=closeModal; document.getElementById("mYes").onclick=()=>{ onYes(); closeModal(); renderAll(); queueSave(); }; }
+
+function formQuest(id){ const p=id?findProj(id):null; openForm(p?"Edit Quest":"New Quest",[{label:"Project title",value:p?p.title:""},{label:"Subtitle",value:p?p.sub:""},{label:"Status",value:p?p.status:""}],v=>{ if(p){p.title=v[0];p.sub=v[1];p.status=v[2];} else {const np={id:uid(),title:v[0]||"Untitled Quest",sub:v[1]||"",status:v[2]||"",hidden:false,created:Date.now(),log:[]}; projects.push(np); currentProject=np.id;} }); }
+function formEntry(pid,eid){ const p=findProj(pid||currentProject); if(!p) return formQuest(); const e=eid?(p.log||[]).find(x=>x.id===eid):null; openForm(e?"Edit Entry":"New Quest Entry",[{label:"Date",value:e?e.date:todayStr()},{label:"Entry",type:"textarea",value:e?e.text:""}],v=>{ if(e){e.date=v[0]||todayStr();e.text=v[1];} else {p.log=p.log||[]; p.log.unshift({id:uid(),date:v[0]||todayStr(),hidden:false,text:v[1]||""});} }); }
+function formPaper(id){ const p=id?papers.find(x=>x.id===id):null; openForm(p?"Edit Paper":"Add Paper",[{label:"Title",value:p?p.title:""},{label:"Authors (Year)",value:p?p.authors:""},{label:"Journal",value:p?p.journal:""},{label:"Tags",value:p?(p.tags||[]).join(", "):""},{label:"Status",type:"select",options:["fragment","draft","forged"],value:p?p.status:"fragment"},{label:"Analysis",type:"textarea",value:p?p.analysis:""}],v=>{ const tags=splitTags(v[3]); if(p){p.title=v[0];p.authors=v[1];p.journal=v[2]||"—";p.tags=tags;p.status=v[4];p.analysis=v[5];} else papers.unshift({id:uid(),title:v[0]||"Untitled",authors:v[1]||"—",journal:v[2]||"—",tags,status:v[4],analysis:v[5]||"",hidden:false}); }); }
+function formMechCat(id){ const c=id?mechCats.find(x=>x.id===id):null; openForm(c?"Rename Mechanism Category":"Add Mechanism Category",[{label:"Category name",value:c?c.name:""}],v=>{ if(c)c.name=v[0]||c.name; else {const nc={id:uid(),name:v[0]||"New Category",mechs:[]}; mechCats.push(nc); currentMechCat=nc.id;} }); }
+function formMech(catId,mid){ const cat=mechCats.find(c=>c.id===(catId||currentMechCat))||mechCats[0]; if(!cat) return formMechCat(); const m=mid?(cat.mechs||[]).find(x=>x.id===mid):null; openForm(m?"Edit Mechanism":"Add Mechanism",[{label:"Name",value:m?m.name:""},{label:"Date",value:m?m.date:todayStr()},{label:"Status",type:"select",options:["fragment","draft","forged"],value:m?m.status:"fragment"},{label:"Description",type:"textarea",value:m?m.desc:""},{label:"Tags",value:m?(m.tags||[]).join(", "):""}],v=>{ const tags=splitTags(v[4]); if(m){m.name=v[0];m.date=v[1]||todayStr();m.status=v[2];m.desc=v[3];m.tags=tags;} else {cat.mechs=cat.mechs||[]; cat.mechs.unshift({id:uid(),name:v[0]||"Untitled",date:v[1]||todayStr(),status:v[2],desc:v[3]||"",tags,hidden:false});} }); }
+function formIdeaCat(id){ const c=id?ideaCats.find(x=>x.id===id):null; openForm(c?"Rename Idea Category":"Add Idea Category",[{label:"Category name",value:c?c.name:""}],v=>{ if(c)c.name=v[0]||c.name; else {const nc={id:uid(),name:v[0]||"New Category",ideas:[]}; ideaCats.push(nc); currentIdeaCat=nc.id;} }); }
+function formIdea(catId,id){ const cat=ideaCats.find(c=>c.id===(catId||currentIdeaCat))||ideaCats[0]; if(!cat) return formIdeaCat(); const i=id?(cat.ideas||[]).find(x=>x.id===id):null; openForm(i?"Edit Idea":"Log Idea",[{label:"Date",value:i?i.date:todayStr()},{label:"Idea",type:"textarea",value:i?i.text:""},{label:"Source",value:i?i.source:""},{label:"Tags",value:i?(i.tags||[]).join(", "):""}],v=>{ const tags=splitTags(v[3]); if(i){i.date=v[0]||todayStr();i.text=v[1];i.source=v[2];i.tags=tags;} else {cat.ideas=cat.ideas||[]; cat.ideas.unshift({id:uid(),date:v[0]||todayStr(),text:v[1]||"",source:v[2]||"",tags,hidden:false});} }); }
+function formCf(id){ const c=id?campfires.find(x=>x.id===id):null; openForm(c?"Edit Campfire":"New Campfire",[{label:"Week label",value:c?c.week:"WEEK OF "},{label:"Most important thing I understood",type:"textarea",value:c?c.understood:""},{label:"Which previous idea changed",type:"textarea",value:c?c.changed:""},{label:"Which question kept returning",type:"textarea",value:c?c.returning:""},{label:"Keep",type:"textarea",value:c?c.keep:""},{label:"Set down",type:"textarea",value:c?c.discard:""},{label:"Next main quest",type:"textarea",value:c?c.next:""}],v=>{ if(c){c.week=v[0];c.understood=v[1];c.changed=v[2];c.returning=v[3];c.keep=v[4];c.discard=v[5];c.next=v[6];} else campfires.unshift({id:uid(),week:v[0]||"NEW WEEK",understood:v[1]||"",changed:v[2]||"",returning:v[3]||"",keep:v[4]||"",discard:v[5]||"",next:v[6]||"",hidden:false}); }); }
+function moveQuest(id,dir){ const i=projects.findIndex(p=>p.id===id), j=dir==="up"?i-1:i+1; if(i<0||j<0||j>=projects.length)return; [projects[i],projects[j]]=[projects[j],projects[i]]; renderAll(); queueSave(); }
+
+function handleAct(el){ const d=el.dataset; switch(d.act){
+  case "back": switchSection("dashboard"); break;
+  case "toggle-hidden": showHidden=!showHidden; renderAll(); break;
+  case "proj": currentProject=d.proj; renderTimeline(currentProject); break;
+  case "add-quest": formQuest(); break; case "edit-quest": formQuest(d.id); break; case "hide-quest": {const p=findProj(d.id); if(p)p.hidden=!p.hidden; renderAll(); queueSave(); break;} case "del-quest": confirmModal("Delete this quest and all entries?",()=>{projects=projects.filter(p=>p.id!==d.id); currentProject=mainId();}); break; case "move-quest": moveQuest(d.id,d.dir); break;
+  case "add-entry": formEntry(currentProject); break; case "edit-entry": formEntry(d.pid,d.eid); break; case "hide-entry": {const p=findProj(d.pid), e=p&&(p.log||[]).find(x=>x.id===d.eid); if(e)e.hidden=!e.hidden; renderAll(); queueSave(); break;} case "del-entry": confirmModal("Delete this entry?",()=>{const p=findProj(d.pid); if(p)p.log=(p.log||[]).filter(e=>e.id!==d.eid);}); break;
+  case "add-paper": formPaper(); break; case "edit-paper": formPaper(d.id); break; case "hide-paper": {const p=papers.find(x=>x.id===d.id); if(p)p.hidden=!p.hidden; renderAll(); queueSave(); break;} case "del-paper": confirmModal("Delete this paper?",()=>{papers=papers.filter(p=>p.id!==d.id);}); break; case "paper-tag": selectedPaperTags.has(d.tag)?selectedPaperTags.delete(d.tag):selectedPaperTags.add(d.tag); renderPapers(); renderPaperTags(); break; case "clear-paper-tags": selectedPaperTags.clear(); renderPapers(); renderPaperTags(); break;
+  case "mech-cat": currentMechCat=d.id; selectedMechTags.clear(); renderMechs(); renderMechTags(); break; case "add-mech-cat": formMechCat(); break; case "rename-mech-cat": formMechCat(d.id); break; case "del-mech-cat": confirmModal("Delete this mechanism category and all cards inside it?",()=>{mechCats=mechCats.filter(c=>c.id!==d.id); currentMechCat=(mechCats[0]&&mechCats[0].id)||""; selectedMechTags.clear();}); break; case "add-mech": formMech(currentMechCat); break; case "edit-mech": formMech(d.cat,d.mid); break; case "hide-mech": {const c=mechCats.find(x=>x.id===d.cat), m=c&&(c.mechs||[]).find(x=>x.id===d.mid); if(m)m.hidden=!m.hidden; renderAll(); queueSave(); break;} case "del-mech": confirmModal("Delete this mechanism?",()=>{const c=mechCats.find(x=>x.id===d.cat); if(c)c.mechs=(c.mechs||[]).filter(m=>m.id!==d.mid);}); break; case "mech-tag": selectedMechTags.has(d.tag)?selectedMechTags.delete(d.tag):selectedMechTags.add(d.tag); renderMechs(); renderMechTags(); break; case "clear-mech-tags": selectedMechTags.clear(); renderMechs(); renderMechTags(); break;
+  case "idea-cat": currentIdeaCat=d.id; selectedIdeaTags.clear(); renderIdeas(); renderIdeaTags(); break; case "add-idea-cat": formIdeaCat(); break; case "rename-idea-cat": formIdeaCat(d.id); break; case "del-idea-cat": confirmModal("Delete this idea category and all cards inside it?",()=>{ideaCats=ideaCats.filter(c=>c.id!==d.id); currentIdeaCat=(ideaCats[0]&&ideaCats[0].id)||""; selectedIdeaTags.clear();}); break; case "add-idea": formIdea(currentIdeaCat); break; case "edit-idea": formIdea(d.cat,d.id); break; case "hide-idea": {const c=ideaCats.find(x=>x.id===d.cat), i=c&&(c.ideas||[]).find(x=>x.id===d.id); if(i)i.hidden=!i.hidden; renderAll(); queueSave(); break;} case "del-idea": confirmModal("Delete this idea?",()=>{const c=ideaCats.find(x=>x.id===d.cat); if(c)c.ideas=(c.ideas||[]).filter(i=>i.id!==d.id);}); break; case "idea-tag": selectedIdeaTags.has(d.tag)?selectedIdeaTags.delete(d.tag):selectedIdeaTags.add(d.tag); renderIdeas(); renderIdeaTags(); break; case "clear-idea-tags": selectedIdeaTags.clear(); renderIdeas(); renderIdeaTags(); break;
+  case "add-cf": formCf(); break; case "edit-cf": formCf(d.id); break; case "hide-cf": {const c=campfires.find(x=>x.id===d.id); if(c)c.hidden=!c.hidden; renderAll(); queueSave(); break;} case "del-cf": confirmModal("Delete this campfire?",()=>{campfires=campfires.filter(c=>c.id!==d.id);}); break;
+  case "set-setting": settings[d.key]=d.val; saveSettings(); break; case "export-json": exportJson(); break; case "import-json": importFile.click(); break; case "cloud-backup": saveCloudBackup(); break; case "reset-empty": confirmModal("Reset cabinet to an empty state? This overwrites the cloud state.",()=>{hydrate(defaultState()); selectedPaperTags.clear(); selectedMechTags.clear(); selectedIdeaTags.clear(); renderAll(); queueSave();}); break; case "logout": logout(); break;
+}}
+
+document.addEventListener("click", e=>{
+  const nav=e.target.closest(".nav-btn"); if(nav){ switchSection(nav.dataset.section); return; }
+  const jump=e.target.closest("[data-jump]"); if(jump){ if(jump.dataset.project) currentProject=jump.dataset.project; switchSection(jump.dataset.jump); return; }
+  const act=e.target.closest("[data-act]"); if(act){ e.stopPropagation(); handleAct(act); return; }
+  const card=e.target.closest(".paper-card,.idea-card,.mech-card"); if(card){ card.classList.toggle("open"); }
+});
+modalX.onclick=closeModal; modalBg.addEventListener("click",e=>{ if(e.target===modalBg) closeModal(); });
+questSortSel.addEventListener("change",()=>{questSort=questSortSel.value; renderAll(); queueSave();});
+paperSearch.addEventListener("input",()=>renderPapers());
+mechSearch.addEventListener("input",()=>renderMechs());
+ideaSearch.addEventListener("input",()=>renderIdeas());
+importFile.addEventListener("change", e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const obj=JSON.parse(r.result); const next=obj.data&&obj.data.projects?obj.data:obj.projects?obj:null; if(!next) throw new Error("JSON does not look like a Labor Cabinet export."); hydrate(next); if(obj.settings){settings={...settings,...obj.settings}; saveSettings();} renderAll(); queueSave(); }catch(err){ alert(err.message); } finally { importFile.value=""; } }; r.readAsText(f); });
+
+function exportJson(){ const payload={exported_at:new Date().toISOString(), schema_version:2, data:stateData(), settings}; const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="labor-cabinet-export-"+todayStr()+".json"; a.click(); URL.revokeObjectURL(url); }
+async function saveCloudBackup(){ const {error}=await sb.from("cabinet_backups").insert({user_id:user.id,data:stateData(),note:"Manual backup from Settings"}); if(error) setSaveStatus("Backup error: "+error.message); else setSaveStatus("Cloud backup saved: "+new Date().toLocaleString()); }
+async function logout(){ await saveStateNow(); await sb.auth.signOut(); user=null; appReady=false; showLogin(); }
+
+init();
+</script>
+</body>
+</html>
